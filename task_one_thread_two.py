@@ -1,5 +1,5 @@
 from pathlib import Path
-import concurrent.futures
+from threading import Thread
 import os
 import shutil
 
@@ -8,7 +8,6 @@ x = input('Enter folder:')
 y = input('Enter target folder:')
 path = Path(x)
 
-fileslist = []
 folders_list = [path]
 
 #CREATING NEW FOLDERS
@@ -33,25 +32,25 @@ def folders_finder(path_folder):
 
 #ПЕРЕЧЕНЬ ФАЙЛОВ ВО ВСЕХ ПАПКАХ
 def files_finder(path):
+    fileslist = []
     for item in path.iterdir():
         if os.path.isfile(item):
             fileslist.append(item)
     return fileslist
 
 #CREATING NEW FOLDERS AND COPY FILES
-def filehandler(file_location):
-    file_extension = os.path.splitext(file_location)[1][1:]
-    folder_to_copy = folder_creater(target_folder, file_extension)
-    if not os.path.isdir(folder_to_copy):
-        os.mkdir(folder_to_copy)
-    shutil.copy(file_location, folder_to_copy)
+def filehandler(folder):
+    for file_location in files_finder(folder):
+        file_extension = os.path.splitext(file_location)[1][1:]
+        folder_to_copy = folder_creater(target_folder, file_extension)
+        if not os.path.isdir(folder_to_copy):
+            os.mkdir(folder_to_copy)
+        shutil.copy(file_location, folder_to_copy)
 
-
-folders_finder(path)
-
-for i in folders_list:
-    files_finder(i)
 
 if __name__ == '__main__':
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        executor.map(filehandler, fileslist)
+    folders_finder(path)
+
+    for folder in folders_list:
+        thread = Thread(target=filehandler, args=(folder,))
+        thread.start()
